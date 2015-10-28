@@ -128,3 +128,65 @@ handle_call(alloc, Chs) ->
 handle_cast({free, Ch}, Chs) ->
     free(Ch, Chs). % => Chs2
 ```
+
+注意如下几点：
+
+  * `server` 中的代码能够被重用来构建许多不同的服务器。
+  * 服务器的名字，也就是这个例子中的 atom `ch2`，会从客户端函数的使用者中被隐藏。这意味着，这个名字可以在不影响功能的情况下被修改。
+  * 协议（传给服务器和被接受的消息）也被隐藏了，这是好的编程实践，允许我们修改协议，而不会修改使用接口函数的代码。
+  * `server` 的功能能够在不改变 `ch2` 或者其他任何回调模块的情况下被拓展。
+
+在上边的 `ch1.erl` 和 `ch2.erl` 中，`channels/0`，`alloc/1` 和 `free/2` 的实现已经被有意地省略了，因为这跟这个例子没有关系。
+为了完整性，这些函数的一种写法在下边给出了。这只是一个实例，一个真实的实现必须能够处理一些情况，像没有信道分配等等。
+
+```erlang
+channels() ->
+   {_Allocated = [], _Free = lists:seq(1,100)}.
+
+alloc({Allocated, [H|T] = _Free}) ->
+   {H, {[H|Allocated], T}}.
+
+free(Ch, {Alloc, Free} = Channels) ->
+   case lists:member(Ch, Alloc) of
+      true ->
+         {lists:delete(Ch, Alloc), [Ch|Free]};
+      false ->
+         Channels
+   end.
+```
+
+不用 behaviours 写的代码可能更有效率，但增加的效率是以牺牲了通用性为代价的，能够用一种统一的方式来管理所有应用的能力是重要的。
+
+使用 behaviours 也能够使读懂别人的代码更加容易，而临时的编程结构，尽管可能更有效率，但总是更难理解。
+
+`server` 模块简单说来和 Erlang/OTP 的 `gen_server` 行为相当。
+
+标准的 Erlang/OTP 行为是：
+
+  * gen_server
+
+    用来实现一个客户端-服务端关系的服务端部分
+
+  * gen_fsm
+
+    用来实现有限状态机
+
+  * gen_event
+
+    用来实现事件处理功能
+
+  * supervisor
+
+    用来实现监督树中的监督者
+
+编译器知道模块属性 `-behaviour(Behaviour)` 并能够警告缺少的回调函数，比如：
+
+```erlang
+-module(chs3).
+-behaviour(gen_server).
+...
+
+3> c(chs3).
+./chs3.erl:10: Warning: undefined call-back function handle_call/3
+{ok,chs3}
+```
