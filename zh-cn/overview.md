@@ -163,19 +163,19 @@ free(Ch, {Alloc, Free} = Channels) ->
 
 标准的 Erlang/OTP 行为是：
 
-  * gen_server
+  * [gen_server](./gen_server.md)
 
     用来实现一个客户端-服务端关系的服务端部分
 
-  * gen_fsm
+  * [gen_fsm](./gen_fsm.md)
 
     用来实现有限状态机
 
-  * gen_event
+  * [gen_event](./gen_event.md)
 
     用来实现事件处理功能
 
-  * supervisor
+  * [supervisor](./supervisor.md)
 
     用来实现监督树中的监督者
 
@@ -190,3 +190,33 @@ free(Ch, {Alloc, Free} = Channels) ->
 ./chs3.erl:10: Warning: undefined call-back function handle_call/3
 {ok,chs3}
 ```
+
+## 1.3 应用
+
+Erlang/OTP 包含了许多组件，每个都实现了一些特定功能。这些组件用 Erlang/OTP 的术语来说就是 **应用(applications)**。
+例如，Erlang/OTP 的应用有 Mnesia 和 Debugger，前者有编写数据库服务需要的一切，后者可以用来调试 Erlang 程序。
+基于 Erlang/OTP 的最小的程序会有这两个应用：
+
+  * Kernel - 用来运行 Erlang 的必要功能
+  * STDLIB - Erlang 标准库
+
+应用的概念包括程序结构（进程）和目录结构（模块）。
+
+最简单的应用可以没有任何进程，只是由一些函数模块组成。这样的应用叫 **库程序(library application)**，比如说 STDLIB。
+
+一个包含进程的应用，最简单可以用标准行为来实现成为一个监督树。
+
+[Applications](./applications.md) 中描述了怎样编写应用。
+
+## 1.4 发布
+
+**发布(release)** 是一个由一些 Erlang/OTP 的应用和用户自定义的应用所组成的完整的系统。
+
+[Releases](./releases.md) 中描述了如何编写发布。
+
+如何在指定环境中安装发布，在第二节系统原则中关于目标系统的那节中有描述。
+
+## 1.5 发布处理
+
+**发布处理(Release Handling)** 是在一个发布的不同版本中升级或降级，而且（可能）是在一个运行中的环境。
+这部分在 [Release Handling](./release_handling.md) 中描述。
