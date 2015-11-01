@@ -58,3 +58,32 @@ start_link() ->
 ```
 
 start_link 调用函数 `gen_server:start_link/4`，这个函数衍生并且连接到一个新的进程，一个 `gen_server`。
+
+  * 第一个参数 `{local, ch3}` 指定了名字，`gen_server` 被本地注册为 ch3。
+
+    如果名字被省去的话，`gen_server` 不会被注册，而它的 pid 必须被使用。名字也能够用 `{global, Name}`，
+    这时 `gen_server` 会用 `global:register_name/2` 来注册。
+
+  * 第二个参数 `ch3` 是回调模块的名字，也就是回调函数在的模块。
+
+    接口函数（`start_link`，`alloc` 和 `free`）和回调函数（`init`，`handle_call` 和
+    `handle_cast`）在同一个模块中。把和一个进程相关的函数放在同一个模块中，通常是好的编程实践。
+
+  * 第三个参数 `[]` 是用来之后传递到回调函数 `init` 的一个变量。在这段代码中，`init` 不需要任何
+    传入的数据，所以忽略这个参数。
+
+  * 第四个参数 `[]` 是一个参数的队列，去 `gen_server(3)` 手册查看更多的说明。
+
+如果名字注册成功，新的 `gen_server` 进程会调用回调函数 `ch3:init([])`。 `init` 被期望返回 `{ok, State}`，
+这里的 `State` 是 `gen_server` 的内部状态。这个例子中，状态是可用的信道。
+
+```erlang
+init(_Args) ->
+    {ok, channels()}.
+```
+
+`gen_server:start_link` 是同步的，直到 `gen_server` 被初始化完并且可以接受请求时，它才会返回。
+
+如果 `gen_server` 是监督树的一部分（被一个监督者启动），那么 `gen_server:start_link` 必须被使用。
+还有另外一个函数 `gen_server:start` 用来启动一个单独的 `gen_server`，也就是说这个 `gen_server`
+不是监督树的一部分。
