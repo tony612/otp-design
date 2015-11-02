@@ -87,3 +87,27 @@ init(_Args) ->
 如果 `gen_server` 是监督树的一部分（被一个监督者启动），那么 `gen_server:start_link` 必须被使用。
 还有另外一个函数 `gen_server:start` 用来启动一个单独的 `gen_server`，也就是说这个 `gen_server`
 不是监督树的一部分。
+
+## 2.4 同步请求 - Call
+
+下边这个同步请求是用 `gen_server:call/2` 来实现的：
+```erlang
+alloc() ->
+    gen_server:call(ch3, alloc).
+```
+
+`ch3` 是`gen_server` 的名字，并且要和用来启动的名字一致，`alloc` 是实际的请求。
+
+请求被做成了一个消息，并被送到 `gen_server`。当请求被收到时，`gen_server` 会调用
+`handle_call(Request, From, State)`，它被期望返回一个 `{reply,Reply,State1}` 的元组。
+`Reply` 是被发送给客户端的回复，`State1` 是 `gen_server` 状态的一个新值。
+
+```erlang
+handle_call(alloc, _From, Chs) ->
+    {Ch, Chs2} = alloc(Chs),
+    {reply, Ch, Chs2}.
+```
+
+在这个例子中，回复是被分配的信道 `Ch`，新的状态是剩下的可用信道的集合 `Chs2`。
+
+所以，`ch3:alloc()` 调用返回分配的信道 `Ch`，`gen_server` 带着一列更新后的可用信道，然后等待新的请求。
