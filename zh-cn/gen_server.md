@@ -98,7 +98,7 @@ alloc() ->
 
 `ch3` 是`gen_server` 的名字，并且要和用来启动的名字一致，`alloc` 是实际的请求。
 
-请求被做成了一个消息，并被送到 `gen_server`。当请求被收到时，`gen_server` 会调用
+请求作为一个消息，被送到 `gen_server`。当请求被收到时，`gen_server` 会调用
 `handle_call(Request, From, State)`，它被期望返回一个 `{reply,Reply,State1}` 的元组。
 `Reply` 是被发送给客户端的回复，`State1` 是 `gen_server` 状态的一个新值。
 
@@ -108,6 +108,32 @@ handle_call(alloc, _From, Chs) ->
     {reply, Ch, Chs2}.
 ```
 
-在这个例子中，回复是被分配的信道 `Ch`，新的状态是剩下的可用信道的集合 `Chs2`。
+在这个例子中，回复是被分配的信道 `Ch`，新的状态是更新后的可用信道的集合 `Chs2`。
 
 所以，`ch3:alloc()` 调用返回分配的信道 `Ch`，`gen_server` 带着一列更新后的可用信道，然后等待新的请求。
+
+## 2.5 异步请求 - cast
+
+异步请求 `free(ch)` 是用 `gen_server:cast/2` 实现的：
+
+```erlang
+free(Ch) ->
+    gen_server:cast(ch3, {free, Ch}).
+```
+
+`ch3` 是 `gen_server` 的名字，`{free, Ch}` 是实际的请求。
+
+请求作为一个消息，被送到 `gen_server`。`cast` 和 `free` 然后返回 `ok`。
+
+当请求被接收的时候，`gen_server` 调用 `handle_cast(Request, State)`，它被期望返回一个元组
+`{noreply, State1}`，State1 是 `gen_server` 状态的一个新值。
+
+```erlang
+handle_cast({free, Ch}, Chs) ->
+    Chs2 = free(Ch, Chs),
+    {noreply, Chs2}.
+```
+
+在这个例子中，新的状态是更新后的可用信道的集合 `Chs2`，`gen_server` 现在开始等待新的请求。
+
+## 2.6 停止
