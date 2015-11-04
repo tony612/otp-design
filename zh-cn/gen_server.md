@@ -137,3 +137,72 @@ handle_cast({free, Ch}, Chs) ->
 在这个例子中，新的状态是更新后的可用信道的集合 `Chs2`，`gen_server` 现在开始等待新的请求。
 
 ## 2.6 停止
+
+### 在一个监督树中
+
+如果 `gen_server` 是一个监督树的一部分，不需要停止的函数，`gen_server` 会被它的监督者自动停止。
+具体怎么完成的在监督者的 [关闭策略](./supervisor.md) 有定义。
+
+如果需要在终止之前做一些清理工作，关闭策略必须是一个超时的值，`gen_server` 必须被设置来捕获
+`init` 函数的退出信号。当被命令关闭时，`gen_server` 会调用回调函数 `terminate(shutdown, State)`：
+
+```erlang
+init(Args) ->
+    ...,
+    process_flag(trap_exit, true),
+    ...,
+    {ok, State}.
+
+...
+
+terminate(shutdown, State) ->
+    ..code for cleaning up here..
+    ok.
+```
+
+### 独立的 Gen_Servers
+
+如果 `gen_server` 不是监督树的一部分，停止函数就有用了。比如：
+
+```erlang
+...
+export([stop/0]).
+...
+
+stop() ->
+    gen_server:cast(ch3, stop).
+...
+
+handle_cast(stop, State) ->
+    {stop, normal, State};
+handle_cast({free, Ch}, State) ->
+    ....
+
+...
+
+terminate(normal, State) ->
+    ok.
+```
+
+处理 `stop` 请求的回调函数返回一个元组 `{stop,normal,State1}`，其中 `normal` 表明它是一个正常的终止，
+`State1` 是 `gen_server` 状态的新值。这会使 `gen_server` 调用 `terminate(normal, State1)`，
+然后优雅地终止。
+
+## 2.7 处理其他消息
+
+如果 `gen_server` 能够接受请求外的其他消息，回调函数 `handle_info(Info, State)` 必须被实现来处理它们。
+其他消息的例子都是退出消息，如果 `gen_server` 被连接到其他进程（和监督者相比）并且截获退出信号。
+
+```erlang
+handle_info({'EXIT', Pid, Reason}, State) ->
+    ..code to handle exits here..
+    {noreply, State1}.
+```
+
+`code_change` 函数也必须被实现。
+
+```erlang
+code_change(OldVsn, State, Extra) ->
+    ..code to convert state (and more) during code change
+    {ok, NewState}.
+```
